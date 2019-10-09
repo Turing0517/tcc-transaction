@@ -17,7 +17,7 @@ public abstract class CompensableTransactionAspect {
     public void setCompensableTransactionInterceptor(CompensableTransactionInterceptor compensableTransactionInterceptor) {
         this.compensableTransactionInterceptor = compensableTransactionInterceptor;
     }
-    //切点
+    //切点，拦截有Compensable注解的方法
     @Pointcut("@annotation(org.mengyun.tcctransaction.api.Compensable)")
     public void compensableService() {
 
@@ -25,7 +25,7 @@ public abstract class CompensableTransactionAspect {
     //环绕切面
     @Around("compensableService()")
     public Object interceptCompensableMethod(ProceedingJoinPoint pjp) throws Throwable {
-
+        //对方法进行执行
         return compensableTransactionInterceptor.interceptCompensableMethod(pjp);
     }
 

@@ -89,7 +89,7 @@ public @interface Compensable {
         public static int getTransactionContextParamPosition(Class<?>[] parameterTypes) {
 
             int position = -1;
-
+            //从方法参数中获取TransactionContext的位置
             for (int i = 0; i < parameterTypes.length; i++) {
                 if (parameterTypes[i].equals(org.mengyun.tcctransaction.api.TransactionContext.class)) {
                     position = i;

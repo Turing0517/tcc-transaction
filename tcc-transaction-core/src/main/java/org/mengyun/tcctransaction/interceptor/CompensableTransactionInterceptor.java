@@ -70,6 +70,7 @@ public class CompensableTransactionInterceptor {
         boolean asyncCancel = compensableMethodContext.getAnnotation().asyncCancel();
         //添加延迟取消异常
         Set<Class<? extends Exception>> allDelayCancelExceptions = new HashSet<Class<? extends Exception>>();
+        //添加标签中设置的延迟异常
         allDelayCancelExceptions.addAll(this.delayCancelExceptions);
         allDelayCancelExceptions.addAll(Arrays.asList(compensableMethodContext.getAnnotation().delayCancelExceptions()));
 
