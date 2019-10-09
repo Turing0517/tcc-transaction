@@ -8,6 +8,10 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Kyro 序列化实现
+ * @param <T>
+ */
 public class KryoThreadLocalSerializer<T> implements ObjectSerializer<T> {
 
 

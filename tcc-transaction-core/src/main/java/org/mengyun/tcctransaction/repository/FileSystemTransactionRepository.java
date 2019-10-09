@@ -17,6 +17,8 @@ import java.util.List;
 /**
  * Created by changming.xie on 2/24/16.
  * this repository is suitable for single node, not for cluster nodes
+ * 文件事务存储器，
+ * 不支持乐观锁
  */
 public class FileSystemTransactionRepository extends CachableTransactionRepository {
 

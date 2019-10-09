@@ -19,13 +19,20 @@ import java.util.*;
  * set below directives in your redis.conf
  * appendonly yes
  * appendfsync always
+ * Redis事务存储器，将Transaction存储到Redis上
+ * 一个事务存储到 Reids，使用 Redis 的数据结构为 HASHES。
  */
 public class RedisTransactionRepository extends CachableTransactionRepository {
 
     private static final Logger logger = Logger.getLogger(RedisTransactionRepository.class.getSimpleName());
-
+    /**
+     * Redis 连接池
+     */
     private JedisPool jedisPool;
-
+    /**
+     * key 前缀
+     * 类似 JdbcTransactionRepository 的 domain 属性。
+     */
     private String keyPrefix = "TCC:";
 
     private int fetchKeySize = 1000;
@@ -38,6 +45,9 @@ public class RedisTransactionRepository extends CachableTransactionRepository {
         this.keyPrefix = keyPrefix;
     }
 
+    /**
+     * 序列化
+     */
     private ObjectSerializer serializer = new KryoPoolSerializer();
 
     public void setSerializer(ObjectSerializer serializer) {

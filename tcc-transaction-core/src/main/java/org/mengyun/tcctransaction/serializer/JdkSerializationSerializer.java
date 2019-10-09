@@ -6,6 +6,7 @@ import java.io.Serializable;
 
 /**
  * Created by changming.xie on 7/22/16.
+ * JDK实现序列化
  */
 public class JdkSerializationSerializer<T extends Serializable> implements ObjectSerializer<T> {
 

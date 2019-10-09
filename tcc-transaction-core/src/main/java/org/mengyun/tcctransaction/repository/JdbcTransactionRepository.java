@@ -17,15 +17,33 @@ import java.util.List;
 
 /**
  * Created by changmingxie on 10/30/15.
+ * JDBC事务存储器
+ * 表结构
+ * CREATE TABLE `TCC_TRANSACTION` (
+ *      `TRANSACTION_ID` int(11) NOT NULL AUTO_INCREMENT,
+ *      `DOMAIN` varchar(100) DEFAULT NULL,
+ *      `GLOBAL_TX_ID` varbinary(32) NOT NULL,
+ *      `BRANCH_QUALIFIER` varbinary(32) NOT NULL,
+ *      `CONTENT` varbinary(8000) DEFAULT NULL,
+ *      `STATUS` int(11) DEFAULT NULL,
+ *      `TRANSACTION_TYPE` int(11) DEFAULT NULL,
+ *      `RETRIED_COUNT` int(11) DEFAULT NULL,
+ *      `CREATE_TIME` datetime DEFAULT NULL,
+ *      `LAST_UPDATE_TIME` datetime DEFAULT NULL,
+ *      `VERSION` int(11) DEFAULT NULL,
+ *      PRIMARY KEY (`TRANSACTION_ID`),
+ *      UNIQUE KEY `UX_TX_BQ` (`GLOBAL_TX_ID`,`BRANCH_QUALIFIER`)
+ *   ) ENGINE=InnoDB DEFAULT CHARSET=utf8
  */
 public class JdbcTransactionRepository extends CachableTransactionRepository {
-
+    //领域，或者也可以称为模块名，应用名，用于唯一标识一个资源。例如，Maven 模块 xxx-order，我们可以配置该属性为 ORDER。
     private String domain;
-
+    //表后缀，默认存储表名为 TCC_TRANSACTION，配置表名后，为 TCC_TRANSACTION${tbSuffix}。
     private String tbSuffix;
-
+    //数据源
     private DataSource dataSource;
-
+    //序列化，当数据库里已经有数据的情况下，不要更换别的序列化，否则会导致反序列化报错。建议：TCC-Transaction 存储时，新增字段，
+    // 记录序列化的方式。
     private ObjectSerializer serializer = new KryoPoolSerializer();
 
     public String getDomain() {
@@ -56,6 +74,11 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         return dataSource;
     }
 
+    /**
+     * 插入事务
+     * @param transaction 事务
+     * @return
+     */
     protected int doCreate(Transaction transaction) {
 
         Connection connection = null;
@@ -74,7 +97,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
             stmt.setBytes(1, transaction.getXid().getGlobalTransactionId());
             stmt.setBytes(2, transaction.getXid().getBranchQualifier());
             stmt.setInt(3, transaction.getTransactionType().getId());
-            stmt.setBytes(4, serializer.serialize(transaction));
+            stmt.setBytes(4, serializer.serialize(transaction));//序列化
             stmt.setInt(5, transaction.getStatus().getId());
             stmt.setInt(6, transaction.getRetriedCount());
             stmt.setTimestamp(7, new java.sql.Timestamp(transaction.getCreateTime().getTime()));
@@ -84,7 +107,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
             if (StringUtils.isNotEmpty(domain)) {
                 stmt.setString(10, domain);
             }
-
+            //执行
             stmt.executeUpdate();
             return 1;
         } catch (SQLException e) {
@@ -101,13 +124,18 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         }
     }
 
+    /**
+     * 更新
+     * @param transaction
+     * @return
+     */
     protected int doUpdate(Transaction transaction) {
         Connection connection = null;
         PreparedStatement stmt = null;
 
         java.util.Date lastUpdateTime = transaction.getLastUpdateTime();
         long currentVersion = transaction.getVersion();
-
+        //设置最后更新时间和最新版本号
         transaction.updateTime();
         transaction.updateVersion();
 
@@ -134,7 +162,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
             if (StringUtils.isNotEmpty(domain)) {
                 stmt.setString(8, domain);
             }
-
+            //执行
             int result = stmt.executeUpdate();
 
             return result;
@@ -149,6 +177,11 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         }
     }
 
+    /**
+     * 删除
+     * @param transaction
+     * @return
+     */
     protected int doDelete(Transaction transaction) {
         Connection connection = null;
         PreparedStatement stmt = null;
@@ -191,6 +224,11 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         return null;
     }
 
+    /**
+     * 查询
+     * @param date 指定时间
+     * @return
+     */
     @Override
     protected List<Transaction> doFindAllUnmodifiedSince(java.util.Date date) {
 
@@ -206,7 +244,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
 
             builder.append("SELECT GLOBAL_TX_ID, BRANCH_QUALIFIER, CONTENT,STATUS,TRANSACTION_TYPE,CREATE_TIME,LAST_UPDATE_TIME,RETRIED_COUNT,VERSION");
             builder.append(StringUtils.isNotEmpty(domain) ? ",DOMAIN" : "");
-            builder.append("  FROM " + getTableName() + " WHERE LAST_UPDATE_TIME < ?");
+            builder.append("  FROM " + getTableName() + " WHERE LAST_UPDATE_TIME < ?");//最后更新时间
             builder.append(" AND IS_DELETE = 0 ");
             builder.append(StringUtils.isNotEmpty(domain) ? " AND DOMAIN = ?" : "");
 
@@ -219,7 +257,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
             }
 
             ResultSet resultSet = stmt.executeQuery();
-
+            //创建事务 Transaction
             this.constructTransactions(resultSet, transactions);
         } catch (Throwable e) {
             throw new TransactionIOException(e);
@@ -231,6 +269,11 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         return transactions;
     }
 
+    /**
+     * 根据xids查询
+     * @param xids
+     * @return
+     */
     protected List<Transaction> doFind(List<Xid> xids) {
 
         List<Transaction> transactions = new ArrayList<Transaction>();
@@ -252,7 +295,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
 
             if (!CollectionUtils.isEmpty(xids)) {
                 for (Xid xid : xids) {
-                    builder.append(" ( GLOBAL_TX_ID = ? AND BRANCH_QUALIFIER = ? ) OR");
+                    builder.append(" ( GLOBAL_TX_ID = ? AND BRANCH_QUALIFIER = ? ) OR"); // 通过 or 拼接多个 GLOBAL_TX_ID + BRANCH_QUALIFIER 组合
                 }
 
                 builder.delete(builder.length() - 2, builder.length());
@@ -274,7 +317,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
             }
 
             ResultSet resultSet = stmt.executeQuery();
-
+            //创建Transaction
             this.constructTransactions(resultSet, transactions);
         } catch (Throwable e) {
             throw new TransactionIOException(e);
@@ -286,6 +329,12 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         return transactions;
     }
 
+    /**
+     * 创建Transaction集合
+     * @param resultSet
+     * @param transactions
+     * @throws SQLException
+     */
     protected void constructTransactions(ResultSet resultSet, List<Transaction> transactions) throws SQLException {
         while (resultSet.next()) {
             byte[] transactionBytes = resultSet.getBytes(3);
@@ -298,7 +347,10 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         }
     }
 
-
+    /**
+     * 获取 Connection
+     * @return 连接
+     */
     protected Connection getConnection() {
         try {
             return this.dataSource.getConnection();
@@ -307,6 +359,11 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         }
     }
 
+    /**
+     * 释放 Connection
+     *
+     * @param con 连接
+     */
     protected void releaseConnection(Connection con) {
         try {
             if (con != null && !con.isClosed()) {
@@ -316,7 +373,11 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
             throw new TransactionIOException(e);
         }
     }
-
+    /**
+     * 释放 Statement
+     *
+     * @param stmt stmt
+     */
     private void closeStatement(Statement stmt) {
         try {
             if (stmt != null && !stmt.isClosed()) {

@@ -14,17 +14,32 @@ import java.util.List;
 
 /**
  * Created by changming.xie on 2/18/16.
+ * Zookeeper 事务存储器
+ * 一个事务存储到 Zookeeper，使用 Zookeeper 的持久数据节点。
+
+ path：${zkRootPath} + / + ${xid}。
  */
 public class ZooKeeperTransactionRepository extends CachableTransactionRepository {
-
+    /**
+     * Zookeeper 服务器地址数组
+     */
     private String zkServers;
 
+    /**
+     * Zookeeper 超时时间
+     */
     private int zkTimeout;
-
+    /**
+     * TCC 存储 Zookeeper 根目录
+     */
     private String zkRootPath = "/tcc";
-
+    /**
+     * Zookeeper 连接
+     */
     private volatile ZooKeeper zk;
-
+    /**
+     * 序列化
+     */
     private ObjectSerializer serializer = new KryoPoolSerializer();
 
     public ZooKeeperTransactionRepository() {
@@ -157,13 +172,14 @@ public class ZooKeeperTransactionRepository extends CachableTransactionRepositor
             synchronized (ZooKeeperTransactionRepository.class) {
                 if (zk == null) {
                     try {
+                        // 创建 Zookeeper 连接
                         zk = new ZooKeeper(zkServers, zkTimeout, new Watcher() {
                             @Override
                             public void process(WatchedEvent watchedEvent) {
 
                             }
                         });
-
+                        // 创建 Zookeeper 根目录
                         Stat stat = zk.exists(zkRootPath, false);
 
                         if (stat == null) {
