@@ -44,6 +44,13 @@ public class ReflectionUtils {
         return oldValue;
     }
 
+    /**
+     * 获得声明@Compensable方法的实际类
+     * @param aClass
+     * @param methodName
+     * @param parameterTypes
+     * @return
+     */
     public static Class getDeclaringType(Class aClass, String methodName, Class<?>[] parameterTypes) {
 
         Method method = null;
@@ -74,8 +81,13 @@ public class ReflectionUtils {
         return aClass;
     }
 
+    /**
+     * 返回空值
+     * @param type
+     * @return
+     */
     public static Object getNullValue(Class type) {
-
+        //处理基本类型
         if (boolean.class.equals(type)) {
             return false;
         } else if (byte.class.equals(type)) {

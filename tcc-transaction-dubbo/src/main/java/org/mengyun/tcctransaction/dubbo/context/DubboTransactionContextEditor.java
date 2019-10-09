@@ -11,6 +11,7 @@ import java.lang.reflect.Method;
 
 /**
  * Created by changming.xie on 1/19/17.
+ * Dubbo事务上下文编辑器实现，通过Doubbo隐式传参方式获取事务上下文
  */
 public class DubboTransactionContextEditor implements TransactionContextEditor {
     @Override

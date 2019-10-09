@@ -8,17 +8,35 @@ import java.lang.reflect.Method;
 
 /**
  * Created by changmingxie on 10/25/15.
+ *  TCC-Transaction 基于org.mengyun.tcctransaction.api.@Compensable + org.aspectj.lang.annotation.@Aspect注解AOP切面
+ *  实现业务方法的TCC事务拦截，同Spring 的 org.springframework.transaction.annotation.@Transactional 的实现
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface Compensable {
-
+    /**
+     * 传播级别
+     * @return
+     */
     public Propagation propagation() default Propagation.REQUIRED;
 
+    /**
+     * 确认执行行业方法
+     * @return
+     */
     public String confirmMethod() default "";
 
+    /**
+     * 取消执行业务方法
+     * @return
+     */
     public String cancelMethod() default "";
 
+    /**
+     * 事务上下文编辑
+     * 用于设置和获取事务上下文
+     * @return
+     */
     public Class<? extends TransactionContextEditor> transactionContextEditor() default DefaultTransactionContextEditor.class;
 
     public Class<? extends Exception>[] delayCancelExceptions() default {};
@@ -27,6 +45,9 @@ public @interface Compensable {
 
     public boolean asyncCancel() default false;
 
+    /**
+     * 无事务上下文编辑器实现。
+     */
     class NullableTransactionContextEditor implements TransactionContextEditor {
 
         @Override
@@ -40,6 +61,9 @@ public @interface Compensable {
         }
     }
 
+    /**
+     * 默认事务上下文编辑器实现。
+     */
     class DefaultTransactionContextEditor implements TransactionContextEditor {
 
         @Override
@@ -58,7 +82,7 @@ public @interface Compensable {
 
             int position = getTransactionContextParamPosition(method.getParameterTypes());
             if (position >= 0) {
-                args[position] = transactionContext;
+                args[position] = transactionContext;//设置方法参数
             }
         }
 
@@ -75,6 +99,11 @@ public @interface Compensable {
             return position;
         }
 
+        /**
+         * 获得事务上下文在方法参数里的位置
+         * @param args 参数类型集合
+         * @return 位置
+         */
         public static TransactionContext getTransactionContextFromArgs(Object[] args) {
 
             TransactionContext transactionContext = null;

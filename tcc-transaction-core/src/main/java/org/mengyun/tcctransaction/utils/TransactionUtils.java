@@ -9,6 +9,12 @@ import org.mengyun.tcctransaction.interceptor.CompensableMethodContext;
  */
 public class TransactionUtils {
 
+    /**
+     * 判断事务上下文是否合法
+     * @param isTransactionActive 是否
+     * @param compensableMethodContext
+     * @return
+     */
     public static boolean isLegalTransactionContext(boolean isTransactionActive, CompensableMethodContext compensableMethodContext) {
 
 

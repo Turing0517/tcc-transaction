@@ -2,10 +2,15 @@ package org.mengyun.tcctransaction.api;
 
 /**
  * Created by changmingxie on 10/28/15.
+ * 事务状态
  */
 public enum TransactionStatus {
-
-    TRYING(1), CONFIRMING(2), CANCELLING(3);
+    //尝试中状态
+    TRYING(1),
+    //确认中状态
+    CONFIRMING(2),
+    //取消中状态
+    CANCELLING(3);
 
     private int id;
 

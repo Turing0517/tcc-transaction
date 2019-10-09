@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 
 /**
  * Created by changmingxie on 10/30/15.
+ * 执行器
  */
 public class Terminator implements Serializable {
 
@@ -26,15 +27,15 @@ public class Terminator implements Serializable {
         if (StringUtils.isNotEmpty(invocationContext.getMethodName())) {
 
             try {
-
+                //获取参与者对象
                 Object target = FactoryBuilder.factoryOf(invocationContext.getTargetClass()).getInstance();
-
+                //获取方法
                 Method method = null;
 
                 method = target.getClass().getMethod(invocationContext.getMethodName(), invocationContext.getParameterTypes());
-
+                //设置事务上下文得到方法参数
                 FactoryBuilder.factoryOf(transactionContextEditorClass).getInstance().set(transactionContext, target, method, invocationContext.getArgs());
-
+                //执行方法
                 return method.invoke(target, invocationContext.getArgs());
 
             } catch (Exception e) {
